@@ -1,0 +1,122 @@
+<template>
+  <el-dialog
+    :title="!dataForm.comcode ? '流水详情' : '流水详情'"
+    :close-on-click-modal="false"
+    :visible.sync="visible">
+    <el-table
+      :data="dataList"
+      border
+      v-loading="dataListLoading"
+      @selection-change="selectionChangeHandle"
+      style="width: 100%;">
+      <el-table-column
+        prop="comname"
+        header-align="center"
+        align="center"
+        label="公司名称">
+      </el-table-column>
+      <el-table-column
+        prop="gmt_create"
+        header-align="center"
+        align="center"
+        label="时间">
+      </el-table-column>
+      <el-table-column
+        prop="detailtype"
+        :formatter="changeType"
+        header-align="center"
+        align="center"
+        label="流水类型">
+      </el-table-column>
+      <el-table-column
+        prop="detailmount"
+        header-align="center"
+        align="center"
+        label="账户金额">
+      </el-table-column>
+    </el-table>
+    <el-pagination
+      @size-change="sizeChangeHandle"
+      @current-change="currentChangeHandle"
+      :current-page="pageIndex"
+      :page-sizes="[10, 20, 50, 100]"
+      :page-size="pageSize"
+      :total="totalPage"
+      layout="total, sizes, prev, pager, next, jumper">
+    </el-pagination>
+    <span slot="footer" class="dialog-footer">
+      <el-button @click="visible = false" type="primary">确定</el-button>
+    </span>
+  </el-dialog>
+</template>
+
+<script type="text/ecmascript-6">
+  export default {
+    data () {
+      return {
+        visible: false,
+        pageIndex: 1,
+        pageSize: 10,
+        totalPage: 0,
+        dataListLoading: false,
+        dataListSelections: [],
+        dataForm: {
+          comcode: '',
+          gmt_create: '',
+          // detailtype: '',
+          detailmount: ''
+        },
+        dataList: []
+      }
+    },
+    methods: {
+      init (comcode) {
+        this.dataForm.comcode = comcode || 0
+        this.visible = true
+        this.$nextTick(() => {
+          // this.$refs['dataForm'].resetFields()
+          if (this.dataForm.comcode) {
+            this.$http({
+              url: this.$http.adornUrl(`/generator/comaccountinfo/findByComecode`),
+              method: 'post',
+              data: {
+                'page': this.pageIndex,
+                'limit': this.pageSize,
+                'comcode': this.dataForm.comcode
+              }
+            }).then(({data}) => {
+              if (data && data.code === 0) {
+                this.dataList = data.listMaps
+                this.totalPage = data.numCount
+              }
+            })
+          }
+        })
+      },
+      changeType (row, column, detailtype) {
+        if (detailtype === '10') {
+          return '收入'
+        } else if (detailtype === '20') {
+          return '提现'
+        } else {
+          return '未知'
+        }
+      },
+      // 每页数
+      sizeChangeHandle (val) {
+        this.pageSize = val
+        this.pageIndex = 1
+        this.getDataList()
+      },
+      // 当前页
+      currentChangeHandle (val) {
+        this.pageIndex = val
+        this.getDataList()
+      },
+      // 多选
+      selectionChangeHandle (val) {
+        this.dataListSelections = val
+      }
+    }
+  }
+</script>

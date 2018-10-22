@@ -1,0 +1,140 @@
+<template>
+  <div class="mod-config">
+    <div class="top" style="height: 50px;">
+      <span class="text" >开票公司: 杭州公共交通云科技有限公司</span>
+      <!--<el-button type="primary" style="float: right;">提现说明</el-button>-->
+    </div>
+
+    <el-menu :default-active="activeIndex" class="el-menu-demo" mode="horizontal">
+      <el-menu-item index="1" >提现明细</el-menu-item>
+    </el-menu>
+
+    <el-form :inline="true" @keyup.enter.native="getDataList()" style="margin-top: 20px;">
+      <el-select v-model="withdrawState" filterable placeholder="请选择提现状态" @change="getDataList">
+        <el-option v-for="item in stateOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+      </el-select>
+    </el-form>
+      <el-table :data="dataList" border v-loading="dataListLoading" @selection-change="selectionChangeHandle" style="width: 100%;margin-top: 20px">
+        <el-table-column prop="gmt_create" header-align="center" align="center" label="提现时间"></el-table-column>
+        <el-table-column prop="applyid" header-align="center" align="center" label="提现单号"></el-table-column>
+        <el-table-column prop="paycomname" header-align="center" align="center" label="打款公司"></el-table-column>
+        <el-table-column prop="appmount" header-align="center" align="center" label="提现金额(元)"></el-table-column>
+        <el-table-column prop="appstate" header-align="center" align="center" label="提现状态" :formatter="changeState"></el-table-column>
+        <el-table-column fixed="right" header-align="center" align="center" width="150" label="操作">
+          <template slot-scope="scope">
+            <el-button type="text" size="small" @click="addOrUpdateHandle(scope.row.applyid)">审核</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+    <el-pagination
+      @size-change="sizeChangeHandle"
+      @current-change="currentChangeHandle"
+      :current-page="pageIndex"
+      :page-sizes="[10, 20, 50, 100]"
+      :page-size="pageSize"
+      :total="totalPage"
+      layout="total, sizes, prev, pager, next, jumper">
+    </el-pagination>
+    <!-- 弹窗, 新增 / 修改 -->
+    <add-or-update v-if="addOrUpdateVisible" ref="addOrUpdate" @refreshDataList="getDataList"></add-or-update>
+  </div>
+</template>
+
+<script type="text/ecmascript-6">
+  import AddOrUpdate from './tbaccountrole-add-or-update'
+  export default {
+    data () {
+      return {
+        dataList: [],
+        pageIndex: 1,
+        pageSize: 10,
+        totalPage: 0,
+        dataListLoading: false,
+        dataListSelections: [],
+        addOrUpdateVisible: false,
+        withdrawState: '',
+        activeIndex: '1',
+        stateOptions: [{
+          value: 10,
+          label: '待审'
+        }, {
+          value: 21,
+          label: '同意'
+        }, {
+          value: 22,
+          label: '拒绝'
+        }]
+      }
+    },
+    components: {
+      AddOrUpdate
+    },
+    activated () {
+      this.getDataList()
+    },
+    methods: {
+      changeState (row, column, appstate) {
+        if (appstate === '10') {
+          return '待审'
+        } else if (appstate === '21') {
+          return '同意'
+        } else if (appstate === '22') {
+          return '拒绝'
+        } else {
+          return '未知'
+        }
+      },
+      // 获取数据列表
+      getDataList () {
+        this.dataListLoading = true
+        this.$http({
+          url: this.$http.adornUrl('/generator/extractdetailinfo/list'),
+          method: 'get',
+          params: this.$http.adornParams({
+            'page': this.pageIndex,
+            'limit': this.pageSize,
+            'appstate': this.withdrawState
+            // 'comcodes': '123456'
+          })
+        }).then(({data}) => {
+          if (data && data.code === 0) {
+            this.dataList = data.page
+            this.totalPage = data.numCount
+          } else {
+            this.dataList = []
+            this.totalPage = 0
+          }
+          this.dataListLoading = false
+        })
+      },
+      // 每页数
+      sizeChangeHandle (val) {
+        this.pageSize = val
+        this.pageIndex = 1
+        this.getDataList()
+      },
+      // 当前页
+      currentChangeHandle (val) {
+        this.pageIndex = val
+        this.getDataList()
+      },
+      // 多选
+      selectionChangeHandle (val) {
+        this.dataListSelections = val
+      },
+      // 审核
+      addOrUpdateHandle (applyid) {
+        this.addOrUpdateVisible = true
+        this.$nextTick(() => {
+          this.$refs.addOrUpdate.init(applyid)
+        })
+      }
+    }
+  }
+</script>
+
+<style>
+
+</style>
+

@@ -1,0 +1,127 @@
+<template>
+  <el-dialog
+    :title="!dataForm.id ? '流水详情' : '流水详情'"
+    :close-on-click-modal="false"
+    :visible.sync="visible">
+    <el-table
+      :data="dataList"
+      border
+      v-loading="dataListLoading"
+      @selection-change="selectionChangeHandle"
+      style="width: 100%;">
+      <el-table-column
+        prop="comname"
+        header-align="center"
+        align="center"
+        label="公司名称">
+      </el-table-column>
+      <el-table-column
+        prop="comcontacts"
+        header-align="center"
+        align="center"
+        label="时间">
+      </el-table-column>
+      <el-table-column
+        prop="comcontphone"
+        header-align="center"
+        align="center"
+        label="流水描述">
+      </el-table-column>
+      <el-table-column
+        prop="comemail"
+        header-align="center"
+        align="center"
+        label="流水类型">
+      </el-table-column>
+      <el-table-column
+        prop="comname"
+        header-align="center"
+        align="center"
+        label="账户金额">
+      </el-table-column>
+    </el-table>
+    <el-pagination
+      @size-change="sizeChangeHandle"
+      @current-change="currentChangeHandle"
+      :current-page="pageIndex"
+      :page-sizes="[10, 20, 50, 100]"
+      :page-size="pageSize"
+      :total="totalPage"
+      layout="total, sizes, prev, pager, next, jumper">
+    </el-pagination>
+    <span slot="footer" class="dialog-footer">
+      <el-button @click="visible = false" type="primary">确定</el-button>
+    </span>
+  </el-dialog>
+</template>
+
+<script type="text/ecmascript-6">
+  export default {
+    data () {
+      return {
+        visible: false,
+        pageIndex: 1,
+        pageSize: 10,
+        totalPage: 0,
+        dataListLoading: false,
+        dataListSelections: [],
+        dataForm: {},
+        dataList: []
+      }
+    },
+    methods: {
+      init (id) {
+        this.dataForm.id = id || 0
+        this.visible = true
+        this.$nextTick(() => {
+          // this.$refs['dataForm'].resetFields()
+          if (this.dataForm.id) {
+            this.$http({
+              url: this.$http.adornUrl(`/generator/tbcompanyinfo/info/${this.dataForm.id}`),
+              method: 'get',
+              params: this.$http.adornParams()
+            }).then(({data}) => {
+              if (data && data.code === 0) {
+                this.dataForm.comcode = data.tbCompanyInfo.comcode
+                this.dataForm.comname = data.tbCompanyInfo.comname
+                this.dataForm.comcontacts = data.tbCompanyInfo.comcontacts
+                this.dataForm.comcontphone = data.tbCompanyInfo.comcontphone
+                this.dataForm.comaddress = data.tbCompanyInfo.comaddress
+                this.dataForm.comemail = data.tbCompanyInfo.comemail
+                this.dataForm.comfinance = data.tbCompanyInfo.comfinance
+                this.dataForm.compayee = data.tbCompanyInfo.compayee
+                this.dataForm.businesscode = data.tbCompanyInfo.businesscode
+                this.dataForm.businessimg = data.tbCompanyInfo.businessimg
+                this.dataForm.licenceimg = data.tbCompanyInfo.licenceimg
+                this.dataForm.comopen = data.tbCompanyInfo.comopen
+                this.dataForm.openbank = data.tbCompanyInfo.openbank
+                this.dataForm.openbankcode = data.tbCompanyInfo.openbankcode
+                this.dataForm.openbranchbank = data.tbCompanyInfo.openbranchbank
+                this.dataForm.comremark = data.tbCompanyInfo.comremark
+                this.dataForm.gmtCreate = data.tbCompanyInfo.gmtCreate
+                this.dataForm.gmtModified = data.tbCompanyInfo.gmtModified
+                this.dataForm.isState = data.tbCompanyInfo.isState
+                this.dataForm.isDelete = data.tbCompanyInfo.isDelete
+              }
+            })
+          }
+        })
+      },
+      // 每页数
+      sizeChangeHandle (val) {
+        this.pageSize = val
+        this.pageIndex = 1
+        this.getDataList()
+      },
+      // 当前页
+      currentChangeHandle (val) {
+        this.pageIndex = val
+        this.getDataList()
+      },
+      // 多选
+      selectionChangeHandle (val) {
+        this.dataListSelections = val
+      }
+    }
+  }
+</script>

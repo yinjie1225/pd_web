@@ -1,0 +1,132 @@
+<template>
+  <el-dialog
+    :title="!dataForm.businessid ? '审核' : '审核'"
+    :close-on-click-modal="false"
+    :visible.sync="visible"
+    width="78%" height="700px">
+    <el-table
+      :data = 'dataForm'
+      border
+      style="width: 100%;">
+      <el-table-column type="selection" header-align="center" align="center"  width="50"></el-table-column>
+      <el-table-column  prop="excelid" header-align="center" align="center" label="说明"></el-table-column>
+      <el-table-column  prop="advertname" header-align="center" align="center" label="提现单号"></el-table-column>
+      <el-table-column  prop="advertpv" header-align="center" align="center" label="申请公司"></el-table-column>
+      <el-table-column  prop="advertuv" header-align="center" align="center" label="提现金额（元）"></el-table-column>
+      <el-table-column  prop="expectprofit" header-align="center" align="center" label="审核状态"></el-table-column>
+      <el-table-column  prop="advertcustuv" header-align="center" align="center" label="提现时间"></el-table-column>
+    </el-table>
+    <div style="padding: 10px 20px 20px;text-align: center; -webkit-box-sizing: border-box;box-sizing: border-box;">
+      <span>
+        <el-button type="primary" @click="dataFormSubmit()">通过</el-button>
+        <el-button @click="visible = false">不通过</el-button>
+      </span>
+    </div>
+
+    <el-pagination
+      @size-change="sizeChangeHandle"
+      @current-change="currentChangeHandle"
+      :current-page="pageIndex"
+      :page-sizes="[10, 20, 50, 100]"
+      :page-size="pageSize"
+      :total="totalPage"
+      layout="total, sizes, prev, pager, next, jumper">
+    </el-pagination>
+  </el-dialog>
+
+</template>
+
+<script type="text/ecmascript-6">
+  export default {
+    data () {
+      return {
+        businessid: '',
+        pageIndex: 1,
+        pageSize: 10,
+        totalPage: 0,
+        visible: false,
+        dataForm: [],
+        dataRule: {
+          excelid: [
+            { required: true, message: '导入数据ID不能为空', trigger: 'blur' }
+          ],
+          advertname: [
+            { required: true, message: '广告位名称不能为空', trigger: 'blur' }
+          ],
+          advertspec: [
+            { required: true, message: '广告位规格不能为空', trigger: 'blur' }
+          ],
+          advertpv: [
+            { required: true, message: '广告位访问pv不能为空', trigger: 'blur' }
+          ],
+          advertuv: [
+            { required: true, message: '广告位访问uv不能为空', trigger: 'blur' }
+          ],
+          advertcustuv: [
+            { required: true, message: '新客访问量uv不能为空', trigger: 'blur' }
+          ],
+          visitip: [
+            { required: true, message: 'IP访问量不能为空', trigger: 'blur' }
+          ],
+          expectprofit: [
+            { required: true, message: '预计收益不能为空', trigger: 'blur' }
+          ],
+          confirmtype: [
+            { required: true, message: '确认状态不能为空', trigger: 'blur' }
+          ],
+          gmtCreate: [
+            { required: true, message: '添加时间不能为空', trigger: 'blur' }
+          ],
+          gmtModified: [
+            { required: true, message: '修改时间不能为空', trigger: 'blur' }
+          ],
+          isState: [
+            { required: true, message: '是否有效  0 否  1 是不能为空', trigger: 'blur' }
+          ],
+          isDelete: [
+            { required: true, message: '是否删除   0 否  1是不能为空', trigger: 'blur' }
+          ]
+        }
+      }
+    },
+    methods: {
+      init (businessid) {
+        this.businessid = businessid
+        this.dataForm.businessid = businessid || 0
+        this.visible = true
+        this.$nextTick(() => {
+          // this.$refs['dataForm'].resetFields()
+          if (this.dataForm.businessid) {
+            this.$http({
+              url: this.$http.adornUrl(`/generator/advertisingbusiness/findByBusinessId`),
+              method: 'post',
+              data: {
+                'businessid': businessid,
+                'page': this.pageIndex,
+                'limit': this.pageSize
+              }
+            }).then(({data}) => {
+              if (data && data.code === 0) {
+                this.dataForm = data.page
+                this.totalPage = data.numCount
+              } else {
+                this.totalPage = 0
+              }
+            })
+          }
+        })
+      },
+      // 每页数
+      sizeChangeHandle (val) {
+        this.pageSize = val
+        this.pageIndex = 1
+        this.init(this.businessid)
+      },
+      // 当前页
+      currentChangeHandle (val) {
+        this.pageIndex = val
+        this.init(this.businessid)
+      }
+    }
+  }
+</script>

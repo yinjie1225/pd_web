@@ -1,0 +1,33 @@
+<template>
+  <div class="mod-config">
+    <el-tabs v-model="activeName" @tab-click="handleClick">
+      <span style="float: right;height: 30px;line-height: 30px">客服联系方式：18667119823</span>
+      <el-tab-pane label="基本信息" name="first">
+        <table style="font-size: 18px;font-weight: 500">
+          <tr style="height: 60px;margin-top: 20px"><td>公司名称：杭州市公共交通云科技有限公司</td></tr>
+          <tr style="height: 60px;margin-top: 20px"><td>联系人：杜海霞</td></tr>
+          <tr style="height: 60px;margin-top: 20px"><td>联系电话：18667119823</td></tr>
+          <tr style="height: 60px;margin-top: 20px"><td>电子邮箱：liuq@ibuscloud.com</td></tr>
+        </table>
+      </el-tab-pane>
+      <el-tab-pane label="财务信息" name="second">
+        <span style="height: 60px;margin: 20px 20px;font-size: 18px;font-weight: 500">未认证？</span><a href="#"><el-button type="primary" >联系客服认证</el-button></a>
+      </el-tab-pane>
+    </el-tabs>
+  </div>
+</template>
+
+<script type="text/ecmascript-6">
+  export default {
+    data () {
+      return {
+        activeName: 'second'
+      }
+    },
+    methods: {
+      handleClick (tab, event) {
+        console.log(tab, event)
+      }
+    }
+  }
+</script>

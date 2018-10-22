@@ -1,0 +1,50 @@
+<template>
+  <div class="mod-config">
+    <div class="top" style="height: 50px;">
+      <span class="text" >开票公司: 杭州公共交通云科技有限公司</span>
+      <el-button type="primary" style="float: right;">提现说明</el-button>
+    </div>
+
+    <el-menu :default-active="activeIndex" class="el-menu-demo" mode="horizontal" @select="handleSelect">
+      <el-menu-item index="1" @click="showForm">提现明细</el-menu-item>
+    </el-menu>
+
+    <el-form :inline="true" @keyup.enter.native="getDataList()" v-show="formVisible" style="margin-top: 20px;">
+      <el-select v-model="value10" filterable placeholder="请选择提现状态">
+        <el-option v-for="item in options5" :key="item.value" :label="item.label" :value="item.value"></el-option>
+      </el-select>
+      <el-table>
+        <el-table-column prop="businessname" header-align="center" align="center" label="提现时间"></el-table-column>
+        <el-table-column prop="businessid" header-align="center" align="center" label="提现单号"></el-table-column>
+        <el-table-column prop="businessstate" header-align="center" align="center" label="打款公司" :formatter="bussState"><!-- 01未分润02已分润--></el-table-column>
+        <el-table-column prop="businessid" header-align="center" align="center" label="提现金额(元)"></el-table-column>
+        <el-table-column prop="businessid" header-align="center" align="center" label="提现状态"></el-table-column>
+        <el-table-column fixed="right" header-align="center" align="center" width="150" label="操作">
+          <template slot-scope="scope">
+            <el-button type="text" size="small" @click="addOrUpdateHandle(scope.row.id)">审核</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-form>
+  </div>
+</template>
+
+<script type="text/ecmascript-6">
+  export default {
+    data () {
+      return {
+        formVisible: false
+      }
+    },
+    methods: {
+      showForm () {
+        this.formVisible = !this.formVisible
+      }
+    }
+  }
+</script>
+
+<style>
+
+</style>
+

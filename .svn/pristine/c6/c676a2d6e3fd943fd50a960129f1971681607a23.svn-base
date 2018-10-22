@@ -1,0 +1,299 @@
+<template>
+  <div class="mod-config">
+    <el-form :inline="true" :model="dataForm" @keyup.enter.native="getDataList()">
+      <el-form-item>
+        <el-input v-model="dataForm.businessname" placeholder="业务名称" clearable></el-input>
+      </el-form-item>
+      <!--<el-form-item>-->
+        <!--<el-input v-model="dataForm.businesstype" placeholder="业务类型" clearable></el-input>-->
+      <!--</el-form-item>-->
+      <el-form-item>
+        <!--<el-input v-model="dataForm.businessstate" placeholder="业务状态" clearable></el-input>-->
+        <el-select v-model="dataForm.businessstate" filterable placeholder="业务状态">
+          <el-option v-for="item in stateOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+        </el-select>
+      </el-form-item>
+      <el-form-item>
+        <el-button @click="getDataList()">查询</el-button>
+        <el-button v-if="isAuth('generator:tbprofitbusinessinfo:save')" type="primary" @click="addOrUpdateHandle()">新增</el-button>
+        <el-button type="primary">分润</el-button>
+        <!--<el-button v-if="isAuth('generator:tbprofitbusinessinfo:delete')" type="danger" @click="deleteHandle()" :disabled="dataListSelections.length <= 0">批量删除</el-button>-->
+      </el-form-item>
+    </el-form>
+    <el-table
+      :data="dataList"
+      border
+      v-loading="dataListLoading"
+      @selection-change="selectionChangeHandle"
+      style="width: 100%;">
+      <el-table-column
+        type="selection"
+        header-align="center"
+        align="center"
+        width="50">
+      </el-table-column>
+      <el-table-column
+        prop="businessname"
+        header-align="center"
+        align="center"
+        label="业务名称">
+      </el-table-column>
+      <el-table-column
+        prop="businessid"
+        header-align="center"
+        align="center"
+        label="业务ID">
+      </el-table-column>
+      <el-table-column
+        prop="businesstype"
+        header-align="center"
+        align="center"
+        label="业务类型"
+        :formatter="bussType">
+      </el-table-column>
+      <el-table-column
+        prop="businessstate"
+        header-align="center"
+        align="center"
+        label="业务状态"
+        :formatter="bussState"> <!--  01 未分润  02 已分润-->
+      </el-table-column>
+      <el-table-column
+        fixed="right"
+        header-align="center"
+        align="center"
+        width="150"
+        label="操作">
+        <template slot-scope="scope">
+          <el-button type="text" size="small" @click="detailHandle(scope.row.businessid,scope.row.businessname,scope.row.businessoperatorname)">详情</el-button>
+          <el-button type="text" size="small" @click="addOrUpdateHandle(scope.row.id,scope.row.businessid,scope.row.businessoperatorname)">分润配置</el-button>
+          <el-button type="text" size="small" @click="deleteHandle(scope.row.id,scope.row.businessid)">删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <el-pagination
+      @size-change="sizeChangeHandle"
+      @current-change="currentChangeHandle"
+      :current-page="pageIndex"
+      :page-sizes="[10, 20, 50, 100]"
+      :page-size="pageSize"
+      :total="totalPage"
+      layout="total, sizes, prev, pager, next, jumper">
+    </el-pagination>
+    <!-- 弹窗, 新增 / 修改 -->
+    <add-or-update v-if="addOrUpdateVisible" ref="addOrUpdate" @refreshDataList="getDataList"></add-or-update>
+
+    <el-dialog
+      :visible.sync="detailVisible"
+      width="65%"
+      :before-close="handleClose">
+
+      <el-form :inline="true" class="demo-form-inline" :model="detailForm" ref="detailForm">
+        <el-form-item label="业务名称" prop="businessname" v-model="detailForm.businessname">
+          <el-input placeholder="业务名称" :value="detailForm.businessname" :disabled="true"></el-input>
+        </el-form-item>
+        <el-form-item label="业务ID" prop="businessid" v-model="detailForm.businessid">
+          <el-input placeholder="业务ID" :value="detailForm.businessid" :disabled="true"></el-input>
+        </el-form-item>
+        <el-form-item label="操作员姓名" prop="operatorname" v-model="detailForm.operatorname">
+          <el-input placeholder="操作员姓名" :value="detailForm.operatorname" :disabled="true"></el-input>
+        </el-form-item>
+        <ul style="list-style-type:none;margin-left: -40px;">
+          <li style="list-style-type:none;margin: 0px"  v-for="(item,index) of liList">
+            <el-form-item label="分润角色">
+              <el-input v-model="item.profitrole" :disabled="true"></el-input>
+            </el-form-item>
+            <el-form-item label="分润类型">
+              <el-input prop="calculationrule" :value="changeType(item.calculationrule)" :disabled="true"></el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-input v-model="item.profitvalue" placeholder="例:20%" style="width: 150px;margin-left: 20px;" :disabled="true"></el-input>
+            </el-form-item>
+            <el-form-item label="描述">
+              <el-input v-model="item.describefr" :disabled="true"></el-input>
+            </el-form-item>
+          </li>
+        </ul>
+      </el-form>
+      <span slot="footer" class="dialog-footer" style="text-align: center;">
+        <el-button type="primary" @click="detailVisible = false">确 定</el-button>
+      </span>
+    </el-dialog>
+  </div>
+</template>
+
+<script>
+  import AddOrUpdate from './tbprofitroleinfo-add-or-update'
+  export default {
+    data () {
+      return {
+        liList: [{ profitrole: '', calculationrule: '', profitvalue: '', describefr: '' }],
+        dataForm: {
+          businessname: '',
+          businesstype: '',
+          businessstate: ''
+        },
+        detailForm: {
+          businessname: '',
+          businessid: '',
+          operatorname: ''
+        },
+        dataList: [],
+        detailList: [],
+        pageIndex: 1,
+        pageSize: 10,
+        totalPage: 0,
+        dataListLoading: false,
+        dataListSelections: [],
+        addOrUpdateVisible: false,
+        detailVisible: false,
+        stateOptions: [{
+          value: 1,
+          label: '未分润'
+        }, {
+          value: 2,
+          label: '已分润'
+        }, {
+          value: '',
+          label: '全部'
+        }]
+      }
+    },
+    components: {
+      AddOrUpdate
+    },
+    activated () {
+      this.getDataList()
+    },
+    methods: {
+      bussType (row, column, businesstype) {
+        if (businesstype === '1') {
+          return '广告类'
+        } else if (businesstype === '2') {
+          return '支付宝类'
+        } else {
+          return '未知'
+        }
+      },
+      changeType (calculationrule) {
+        if (calculationrule === '1') {
+          return '占比'
+        } else if (calculationrule === '9') {
+          return '默认'
+        } else {
+          return '无'
+        }
+      },
+      bussState (row, column, businessstate) {
+        if (businessstate === '1') {
+          return '未分润'
+        } else if (businessstate === '2') {
+          return '已分润'
+        } else {
+          return '未知'
+        }
+      },
+      // 获取数据列表
+      getDataList () {
+        this.dataListLoading = true
+        this.$http({
+          url: this.$http.adornUrl('/generator/tbprofitbusinessinfo/list'),
+          method: 'get',
+          params: this.$http.adornParams({
+            'page': this.pageIndex,
+            'limit': this.pageSize,
+            'businessname': this.dataForm.businessname,
+            'businesstype': '2',
+            'businessstate': this.dataForm.businessstate
+          })
+        }).then(({data}) => {
+          if (data && data.code === 0) {
+            this.dataList = data.page.list
+            this.totalPage = data.page.totalCount
+          } else {
+            this.dataList = []
+            this.totalPage = 0
+          }
+          this.dataListLoading = false
+        })
+      },
+      // 每页数
+      sizeChangeHandle (val) {
+        this.pageSize = val
+        this.pageIndex = 1
+        this.getDataList()
+      },
+      // 当前页
+      currentChangeHandle (val) {
+        this.pageIndex = val
+        this.getDataList()
+      },
+      // 多选
+      selectionChangeHandle (val) {
+        this.dataListSelections = val
+      },
+      // 新增 / 修改
+      addOrUpdateHandle (id, busId, operatorName) {
+        this.addOrUpdateVisible = true
+        this.$nextTick(() => {
+          this.$refs.addOrUpdate.init(id, busId, operatorName)
+        })
+      },
+      // 详情
+      detailHandle (businessid, businessname, businessoperatorname) {
+        this.detailVisible = true
+        this.detailForm.businessname = businessname
+        this.detailForm.businessid = businessid
+        this.detailForm.operatorname = businessoperatorname
+        this.$nextTick(() => {
+          this.$http({
+            url: this.$http.adornUrl(`/generator/tbprofitbusinessinfo/queryBusinessDetails`),
+            method: 'post',
+            data: {
+              'businessId': businessid
+            }
+          }).then(({data}) => {
+            if (data && data.code === 0) {
+              this.liList = data.lists
+              console.log(this.liList)
+            }
+          })
+        })
+      },
+      // 删除对话框
+      handleClose () {
+        this.detailVisible = false
+      },
+      // 删除
+      deleteHandle (id, businessid) {
+        this.$confirm(`确定删除操作?`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          this.$http({
+            url: this.$http.adornUrl('/generator/tbprofitbusinessinfo/delete'),
+            method: 'post',
+            data: {
+              'id': id,
+              'businessid': businessid
+            }
+          }).then(({data}) => {
+            if (data && data.code === 0) {
+              this.$message({
+                message: '操作成功',
+                type: 'success',
+                duration: 1500,
+                onClose: () => {
+                  this.getDataList()
+                }
+              })
+            } else {
+              this.$message.error(data.msg)
+            }
+          })
+        })
+      }
+    }
+  }
+</script>

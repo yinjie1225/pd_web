@@ -1,0 +1,147 @@
+<template>
+  <el-dialog
+    :title="!dataForm.id ? '新增' : '修改'"
+    :close-on-click-modal="false"
+    :visible.sync="visible">
+    <el-form :model="dataForm" :rules="dataRule" ref="dataForm" @keyup.enter.native="dataFormSubmit()" label-width="80px">
+    <el-form-item label="业务ID" prop="businessid">
+      <el-input v-model="dataForm.businessid" placeholder="业务ID"></el-input>
+    </el-form-item>
+    <el-form-item label="分润角色  等同于公司comcode" prop="profitrole">
+      <el-input v-model="dataForm.profitrole" placeholder="分润角色  等同于公司comcode"></el-input>
+    </el-form-item>
+    <el-form-item label="分润计算规则  01 占比  02 定额" prop="calculationrule">
+      <el-input v-model="dataForm.calculationrule" placeholder="分润计算规则  01 占比  02 定额"></el-input>
+    </el-form-item>
+    <el-form-item label="分润描述" prop="describe">
+      <el-input v-model="dataForm.describe" placeholder="分润描述"></el-input>
+    </el-form-item>
+    <el-form-item label="添加时间" prop="gmtCreate">
+      <el-input v-model="dataForm.gmtCreate" placeholder="添加时间"></el-input>
+    </el-form-item>
+    <el-form-item label="修改时间" prop="gmtModified">
+      <el-input v-model="dataForm.gmtModified" placeholder="修改时间"></el-input>
+    </el-form-item>
+    <el-form-item label="是否有效  01 是  02 否" prop="isState">
+      <el-input v-model="dataForm.isState" placeholder="是否有效  01 是  02 否"></el-input>
+    </el-form-item>
+    <el-form-item label="是否删除  01 是  02 否" prop="isDelete">
+      <el-input v-model="dataForm.isDelete" placeholder="是否删除  01 是  02 否"></el-input>
+    </el-form-item>
+    </el-form>
+    <span slot="footer" class="dialog-footer">
+      <el-button @click="visible = false">取消</el-button>
+      <el-button type="primary" @click="dataFormSubmit()">确定</el-button>
+    </span>
+  </el-dialog>
+</template>
+
+<script>
+  export default {
+    data () {
+      return {
+        visible: false,
+        dataForm: {
+          id: 0,
+          businessid: '',
+          profitrole: '',
+          calculationrule: '',
+          describe: '',
+          gmtCreate: '',
+          gmtModified: '',
+          isState: '',
+          isDelete: ''
+        },
+        dataRule: {
+          businessid: [
+            { required: true, message: '业务ID不能为空', trigger: 'blur' }
+          ],
+          profitrole: [
+            { required: true, message: '分润角色  等同于公司comcode不能为空', trigger: 'blur' }
+          ],
+          calculationrule: [
+            { required: true, message: '分润计算规则  01 占比  02 定额不能为空', trigger: 'blur' }
+          ],
+          describe: [
+            { required: true, message: '分润描述不能为空', trigger: 'blur' }
+          ],
+          gmtCreate: [
+            { required: true, message: '添加时间不能为空', trigger: 'blur' }
+          ],
+          gmtModified: [
+            { required: true, message: '修改时间不能为空', trigger: 'blur' }
+          ],
+          isState: [
+            { required: true, message: '是否有效  01 是  02 否不能为空', trigger: 'blur' }
+          ],
+          isDelete: [
+            { required: true, message: '是否删除  01 是  02 否不能为空', trigger: 'blur' }
+          ]
+        }
+      }
+    },
+    methods: {
+      init (id) {
+        this.dataForm.id = id || 0
+        this.visible = true
+        this.$nextTick(() => {
+          this.$refs['dataForm'].resetFields()
+          if (this.dataForm.id) {
+            this.$http({
+              url: this.$http.adornUrl(`/generator/tbprofitroleinfo/info/${this.dataForm.id}`),
+              method: 'get',
+              params: this.$http.adornParams()
+            }).then(({data}) => {
+              if (data && data.code === 0) {
+                this.dataForm.businessid = data.tbprofitroleinfo.businessid
+                this.dataForm.profitrole = data.tbprofitroleinfo.profitrole
+                this.dataForm.calculationrule = data.tbprofitroleinfo.calculationrule
+                this.dataForm.describe = data.tbprofitroleinfo.describe
+                this.dataForm.gmtCreate = data.tbprofitroleinfo.gmtCreate
+                this.dataForm.gmtModified = data.tbprofitroleinfo.gmtModified
+                this.dataForm.isState = data.tbprofitroleinfo.isState
+                this.dataForm.isDelete = data.tbprofitroleinfo.isDelete
+              }
+            })
+          }
+        })
+      },
+      // 表单提交
+      dataFormSubmit () {
+        this.$refs['dataForm'].validate((valid) => {
+          if (valid) {
+            this.$http({
+              url: this.$http.adornUrl(`/generator/tbprofitroleinfo/${!this.dataForm.id ? 'save' : 'update'}`),
+              method: 'post',
+              data: this.$http.adornData({
+                'id': this.dataForm.id || undefined,
+                'businessid': this.dataForm.businessid,
+                'profitrole': this.dataForm.profitrole,
+                'calculationrule': this.dataForm.calculationrule,
+                'describe': this.dataForm.describe,
+                'gmtCreate': this.dataForm.gmtCreate,
+                'gmtModified': this.dataForm.gmtModified,
+                'isState': this.dataForm.isState,
+                'isDelete': this.dataForm.isDelete
+              })
+            }).then(({data}) => {
+              if (data && data.code === 0) {
+                this.$message({
+                  message: '操作成功',
+                  type: 'success',
+                  duration: 1500,
+                  onClose: () => {
+                    this.visible = false
+                    this.$emit('refreshDataList')
+                  }
+                })
+              } else {
+                this.$message.error(data.msg)
+              }
+            })
+          }
+        })
+      }
+    }
+  }
+</script>

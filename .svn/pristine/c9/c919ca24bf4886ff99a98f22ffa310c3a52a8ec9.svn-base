@@ -1,0 +1,69 @@
+<template>
+  <div class="mod-config">
+    <div class="top" style="height: 50px;">
+      <span class="text" >开票公司: 杭州公共交通云科技有限公司</span>
+      <el-button type="primary" style="float: right;">提现说明</el-button>
+    </div>
+
+    <el-menu :default-active="activeIndex" class="el-menu-demo" mode="horizontal">
+      <el-menu-item index="1" @click="showForm">提现明细</el-menu-item>
+    </el-menu>
+
+    <el-form :inline="true" @keyup.enter.native="getDataList()" v-show="formVisible" style="margin-top: 20px;">
+      <el-select v-model="withdrawState" filterable placeholder="请选择提现状态">
+        <el-option v-for="item in stateOptions" :key="item.value" :label="item.label" :value="item.label"></el-option>
+      </el-select>
+      <el-table>
+        <el-table-column prop="businessname" header-align="center" align="center" label="提现时间"></el-table-column>
+        <el-table-column prop="businessid" header-align="center" align="center" label="提现单号"></el-table-column>
+        <el-table-column prop="businessstate" header-align="center" align="center" label="打款公司"><!-- 01未分润02已分润--></el-table-column>
+        <el-table-column prop="businessid" header-align="center" align="center" label="提现金额(元)"></el-table-column>
+        <el-table-column prop="businessid" header-align="center" align="center" label="提现状态"></el-table-column>
+        <el-table-column fixed="right" header-align="center" align="center" width="150" label="操作">
+          <template slot-scope="scope">
+            <el-button type="text" size="small" @click="addOrUpdateHandle(scope.row.businessid)">审核</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-form>
+  </div>
+</template>
+
+<script type="text/ecmascript-6">
+  export default {
+    data () {
+      return {
+        withdrawState: '',
+        activeIndex: '1',
+        formVisible: false,
+        stateOptions: [{
+          value: 1,
+          label: '未结清'
+        }, {
+          value: 2,
+          label: '已结清'
+        }, {
+          value: 3,
+          label: '驳回'
+        }]
+      }
+    },
+    methods: {
+      // 审核
+      addOrUpdateHandle (businessid) {
+        this.addOrUpdateVisible = true
+        this.$nextTick(() => {
+          this.$refs.addOrUpdate.init(businessid)
+        })
+      },
+      showForm () {
+        this.formVisible = !this.formVisible
+      }
+    }
+  }
+</script>
+
+<style>
+
+</style>
+

@@ -1,0 +1,346 @@
+<template>
+  <div class="mod-config">
+    <div class="top" style="height: 50px;">
+      <el-button type="primary" style="float: right;margin-top: 10px">提现说明</el-button>
+      <span style="height: 50px; line-height: 50px; font-size: 18px;fontt-weight: 500;margin-top: 10px" >账户余额:{{mount}}元</span>
+      <div style="height: 50px; line-height: 50px; font-size: 18px;fontt-weight: 500;margin-top: 10px" >开票公司: 杭州公共交通云科技有限公司</div>
+      <el-button type="primary" style="margin-top: 10px" @click="getDialogData()">申请提现</el-button>
+    </div>
+    <div style="margin-top: 150px">
+      <el-tabs v-model="activeName" @tab-click="handleClick">
+        <el-tab-pane label="提现明细" name="first">
+          <el-form :inline="true" @keyup.enter.native="getDataList()" style="margin-top: 20px;">
+            <el-date-picker
+              v-model="startTime"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="开始日期">
+            </el-date-picker>
+            <el-date-picker
+              v-model="endTime"
+              type="date"
+              value-format="yyyy-MM-dd"
+              placeholder="结束日期">
+            </el-date-picker>
+            <el-select v-model="withdrawState" filterable placeholder="请选择提现状态" clearable>
+              <el-option v-for="item in stateOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+            </el-select>
+            <el-button @click="getDataList">查询</el-button>
+            <el-table :data="dataList" border v-loading="dataListLoading" @selection-change="selectionChangeHandle" style="width: 100%;margin-top: 16px">
+              <el-table-column prop="apptime" header-align="center" align="center" label="提现时间"></el-table-column>
+              <el-table-column prop="applyid" header-align="center" align="center" label="提现单号"></el-table-column>
+              <el-table-column prop="comname" header-align="center" align="center" label="打款公司"><!-- 01未分润02已分润--></el-table-column>
+              <el-table-column prop="appmount" header-align="center" align="center" label="提现金额(元)"></el-table-column>
+              <el-table-column prop="appstate" header-align="center" align="center" label="提现状态" :formatter="changeState"></el-table-column>
+            </el-table>
+            <el-pagination
+              @size-change="sizeChangeHandle"
+              @current-change="currentChangeHandle"
+              :current-page="pageIndex"
+              :page-sizes="[10, 20, 50, 100]"
+              :page-size="pageSize"
+              :total="totalPage"
+              layout="total, sizes, prev, pager, next, jumper">
+            </el-pagination>
+          </el-form>
+        </el-tab-pane>
+        <el-tab-pane label="收入明细" name="second" @keyup.enter.native="getTableData()">
+          <el-form :inline="true"  style="margin-top: 20px;">
+            <el-table
+              border v-loading="dataListLoading"
+              @selection-change="selectionChangeHandle"
+              :data="tableData"
+              style="width: 100%">
+              <el-table-column
+                prop="incomeid"
+                label="入账单号"
+                width="180">
+              </el-table-column>
+              <el-table-column
+                prop="businessname"
+                label="收入业务"
+                width="180">
+              </el-table-column>
+              <el-table-column
+              prop="incomemount"
+              label="业务金额">
+            </el-table-column>
+              <el-table-column
+                prop="address"
+                label="—">
+              </el-table-column>
+            </el-table>
+            <el-pagination
+              @size-change="sizeChangeHandle"
+              @current-change="currentChangeHandle"
+              :current-page="pageIndex"
+              :page-sizes="[10, 20, 50, 100]"
+              :page-size="pageSize"
+              :total="totalPage"
+              layout="total, sizes, prev, pager, next, jumper">
+            </el-pagination>
+          </el-form>
+        </el-tab-pane>
+      </el-tabs>
+    </div>
+
+    <el-dialog
+      title="信息确认"
+      :visible.sync="dialogVisible"
+      width="30%"
+      :before-close="handleClose">
+      <el-form :model="dataForm" ref="dataForm" @keyup.enter.native="getDialogData()" label-width="80px">
+        <el-form-item label="公司名称" prop="comname">
+          <el-input :value="comName" :disabled="true"></el-input>
+        </el-form-item>
+        <el-form-item label="提款账号" prop="openbankcode">
+          <el-input v-model="dataForm.openbankcode"></el-input>
+        </el-form-item>
+        <el-form-item label="开户银行" prop="openbank">
+          <el-input v-model="dataForm.openbank"></el-input>
+        </el-form-item>
+        <el-form-item label="申请金额" prop="appmount">
+          <el-input v-model="dataForm.appmount"></el-input>
+        </el-form-item>
+        <el-form-item label="申请说明" prop="appremark">
+          <el-input v-model="dataForm.appremark"></el-input>
+        </el-form-item>
+        <el-form-item>
+          <span style="color: red">如发现信息有误，请前往账户管理模块联系客服</span>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+    <el-button @click="dialogVisible = false">取 消</el-button>
+    <el-button type="primary" @click="DialogSubmit()">确 定</el-button>
+  </span>
+    </el-dialog>
+
+  </div>
+</template>
+
+<script type="text/ecmascript-6">
+  import AddOrUpdate from './financialManagement-add-or-update'
+  export default {
+    data () {
+      return {
+        startTime: '',
+        endTime: '',
+        dataList: [],
+        pageIndex: 1,
+        pageSize: 10,
+        totalPage: 0,
+        dataListLoading: false,
+        dataListSelections: [],
+        value6: '',
+        mount: '还未拥有账户余额',
+        tableData: [],
+        dataForm: {
+          openbankcode: '',
+          openbank: '',
+          appremark: '',
+          appmount: ''
+        },
+        comname: '',
+        withdrawState: '',
+        activeName: 'first',
+        activeIndex: '1',
+        dialogVisible: false,
+        stateOptions: [{
+          value: '10',
+          label: '待审'
+        }, {
+          value: '21',
+          label: '同意'
+        }, {
+          value: '22',
+          label: '拒绝'
+        }]
+      }
+    },
+    computed: {
+      comCode: {
+        get () {
+          return this.$store.state.user.comcode
+        }
+      },
+      comName: {
+        get () {
+          return this.$store.state.user.comname
+        }
+      }
+    },
+    components: {
+      AddOrUpdate
+    },
+    activated () {
+      this.getDataList()
+      this.getTableData()
+      this.getComMount()
+    },
+    methods: {
+      getComMount () {
+        this.$http({
+          url: this.$http.adornUrl(`/generator/comaccountinfo/getComaccount`),
+          method: 'post',
+          params: this.$http.adornParams({
+            'comcode': this.comCode
+          })
+        }).then(({data}) => {
+          this.mount = data.comaccount.balance
+        })
+      },
+      // 转换提现状态
+      changeState (row, column, appstate) {
+        if (appstate === '10') {
+          return '待审'
+        } else if (appstate === '21') {
+          return '同意'
+        } else if (appstate === '22') {
+          return '拒绝'
+        } else {
+          return '未知'
+        }
+      },
+      // 每页数
+      sizeChangeHandle (val) {
+        this.pageSize = val
+        this.pageIndex = 1
+        this.getDataList()
+        this.getTableData()
+      },
+      // 当前页
+      currentChangeHandle (val) {
+        this.pageIndex = val
+        this.getDataList()
+        this.getTableData()
+      },
+      // 多选
+      selectionChangeHandle (val) {
+        this.dataListSelections = val
+      },
+      handleClick (tab, event) {
+        console.log(tab, event)
+      },
+      handleClose () {
+        this.dialogVisible = false
+      },
+      // 获取弹框内部数据
+      getDialogData () {
+        this.dialogVisible = true
+        this.$http({
+          url: this.$http.adornUrl('/generator/tbextractapplyinfo/getComInfo'),
+          method: 'post',
+          params: this.$http.adornParams({
+            'comcode': this.comCode
+          })
+        }).then(({data}) => {
+          if (data && data.code === 0) {
+            this.dataForm.openbank = data.info.openbank
+            this.dataForm.openbankcode = data.info.openbankcode
+          } else {
+          }
+        })
+      },
+      // 获取数据列表
+      getTableData () {
+        this.dataListLoading = true
+        this.$http({
+          url: this.$http.adornUrl('/generator/tbincomedetailinfo/list'),
+          method: 'post',
+          params: this.$http.adornParams({
+            'page': this.pageIndex,
+            'limit': this.pageSize
+          })
+        }).then(({data}) => {
+          if (data && data.code === 0) {
+            this.tableData = data.page
+            this.totalPage = data.maxnum
+          } else {
+            this.tableData = []
+            this.totalPage = 0
+          }
+          this.dataListLoading = false
+        })
+      },
+      // 获取数据列表
+      getDataList () {
+        this.dataListLoading = true
+        this.$http({
+          url: this.$http.adornUrl('/generator/tbextractapplyinfo/list'),
+          method: 'post',
+          params: this.$http.adornParams({
+            'page': this.pageIndex,
+            'limit': this.pageSize,
+            'startTime': this.startTime,
+            'endTime': this.endTime,
+            'appstate': this.withdrawState
+          })
+        }).then(({data}) => {
+          if (data && data.code === 0) {
+            this.dataList = data.page
+            this.totalPage = data.maxnum
+          } else {
+            this.dataList = []
+            this.totalPage = 0
+          }
+          this.dataListLoading = false
+          this.$emit('refreshDataList')
+        })
+      },
+      // 表单提交
+      DialogSubmit () {
+        this.dialogVisible = false
+        if (this.dataForm.openbankcode === null) {
+          alert('银行卡号不能为空！')
+          return -1
+        }
+        if (this.dataForm.openbank === null) {
+          alert('开户银行不能为空！')
+          return -1
+        }
+        if (this.dataForm.appmount > this.mount) {
+          alert('申请金额超出账户余额，请重新申请提现！')
+          return -1
+        } else if (this.dataForm.appmount <= 0) {
+          alert('申请金额不正确，请重新提现！')
+          return -1
+        } else {
+          this.$refs['dataForm'].validate((valid) => {
+            if (valid) {
+              this.$http({
+                url: this.$http.adornUrl(`/generator/tbextractapplyinfo/save`),
+                method: 'post',
+                data: this.$http.adornData({
+                  'comcode': this.comCode,
+                  'comname': this.comName,
+                  'Applicant': 'test',
+                  'appmount': this.dataForm.appmount,
+                  'extractcard': this.dataForm.openbankcode,
+                  'extractbank': this.dataForm.openbank,
+                  'Paycomname': 'test',
+                  'appremark': this.dataForm.appremark
+                })
+              }).then(({data}) => {
+                if (data && data.code === 0) {
+                  console.log(this.dataForm.comname)
+                  this.$message({
+                    message: '操作成功',
+                    type: 'success',
+                    duration: 1500,
+                    onClose: () => {
+                      this.visible = false
+                      this.$emit('refreshDataList')
+                      location.reload()
+                    }
+                  })
+                } else {
+                  this.$message.error(data.msg)
+                }
+              })
+            }
+          })
+        }
+      }
+    }
+  }
+</script>

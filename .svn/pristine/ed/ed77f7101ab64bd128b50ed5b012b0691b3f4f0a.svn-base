@@ -1,0 +1,277 @@
+<template>
+  <el-dialog
+    :title="!dataForm.id ? '新增' : '修改'"
+    :close-on-click-modal="false"
+    width="65%"
+    :visible.sync="visible">
+    <el-form :model="dataForm" :rules="dataRule" ref="dataForm" @keyup.enter.native="dataFormSubmit()" label-width="80px" :inline="true">
+      <el-form-item label="业务名称" prop="businessname">
+        <el-input v-model="dataForm.businessname" placeholder="业务名称" v-show="!dataForm.id"></el-input>
+        <!--修改时变为不可改-->
+        <el-input v-model="dataForm.businessname" placeholder="业务名称" :disabled="true" v-show="dataForm.id"></el-input>
+      </el-form-item>
+      <el-form-item label="操作员" prop="businessOperatorname">
+        <el-input :value="userName" :disabled="true"></el-input>
+      </el-form-item>
+      <el-form-item label="业务描述" prop="businessdescribe">
+        <el-input v-model="dataForm.businessdescribe" placeholder="业务描述" v-show="!dataForm.id"></el-input>
+        <!--修改时变为不可改-->
+        <el-input v-model="dataForm.businessdescribe" placeholder="业务描述" :disabled="true" v-show="dataForm.id"></el-input>
+      </el-form-item>
+      <ul style="list-style-type:none;margin-left: -40px;">
+        <li style="list-style-type:none;margin: 0px"  v-for="(item,index) of liList" v-show="!dataForm.id">
+          <el-form-item label="分润角色">
+            <el-select v-model="item.companyvalue" placeholder="分润角色" style="width: 150px">
+              <!--:disabled="changeSelect(item.comname)" 获取一个角色后，后面不能再获取这个角色-->
+              <el-option v-for="(item,index) of options" :value="item.comname" :key="item.comcode" :label="item.comname"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="分润类型">
+            <el-select v-model="item.profittype" placeholder="分润类型" style="width: 150px" >
+              <el-option label="占比" :value="1"></el-option>
+              <el-option label="定额" :value="2"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item>
+            <el-input v-model="item.profittypeInput" :placeholder="item.profittype === 1?'例:20%':'例:20.00元'" style="width: 150px;margin-left: 20px;"></el-input>
+          </el-form-item>
+          <el-form-item label="描述">
+            <el-input v-model="item.description"></el-input>
+          </el-form-item>
+        </li>
+
+        <li v-show="dataForm.id" style="list-style-type:none;margin: 0px" v-for="(item,index) of lists">
+          <el-form-item label="分润角色" prop="profitrole">
+            <!--:disabled="index == flag"  若为公交云那一列，则控制不输入-->
+            <el-input v-model="item.profitrole"  :disabled="true"></el-input>
+          </el-form-item>
+          <el-form-item label="分润类型" prop="calculationrule">
+            <el-input  :value="changeType(item.calculationrule,index)" :disabled="true" ></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-input v-model="item.profitvalue" :disabled="true"></el-input>
+          </el-form-item>
+          <el-form-item label="描述" prop="describefr">
+            <el-input v-model="item.describefr" :disabled="true"></el-input>
+          </el-form-item>
+        </li>
+      </ul>
+
+      <div v-show="!dataForm.id">
+        <el-form-item label="分润角色">
+          <el-input type="text" value="公交云" :disabled="true"></el-input>
+        </el-form-item>
+        <el-form-item label="分润指标">
+        </el-form-item>
+        <el-input style="width: 160px;margin-left: 10px;" value="默认" :disabled="true"></el-input>
+        <el-input style="width: 160px;margin-left: 10px;" value="余多" :disabled="true"></el-input>
+        <el-form-item label="描述" prop="desc">
+          <el-input type="text" v-model="dataForm.desc"></el-input>
+        </el-form-item>
+      </div>
+    </el-form>
+    <span slot="footer" class="dialog-footer">
+      <el-button @click="createnewrole" style="float:left" type="primary" v-show="!dataForm.id">新增角色</el-button>
+      <el-button @click="visible = false">取消</el-button>
+      <el-button type="primary" @click="dataFormSubmit()">确定</el-button>
+    </span>
+  </el-dialog>
+</template>
+
+<script>
+  export default {
+    data () {
+      return {
+        flag: '',
+        desc: '',
+        options: [{
+          comcode: '',
+          comname: ''
+        }],
+        liList: [{ companyvalue: '', profittype: '', profittypeInput: '', description: '' }],
+        lists: [{}],
+        visible: false,
+        dataForm: {
+          id: 0,
+          userName: '',
+          businessname: '',
+          businessdescribe: '',
+          businessOperator: '',
+          businessoperatorname: '',
+          businesstype: '',
+          businessstate: '',
+          gmtCreate: '',
+          gmtModified: '',
+          isState: '',
+          isDelete: '',
+          desc: '',
+          profitroleList: [{}]
+        },
+        formInline: {
+          user: '',
+          region: ''
+        },
+        dataRule: {
+          businessid: [
+            { required: true, message: '业务ID不能为空', trigger: 'blur' }
+          ],
+          businessname: [
+            { required: true, message: '业务名称不能为空', trigger: 'blur' }
+          ],
+          // businessdescribe: [
+          //   { required: true, message: '业务描述不能为空', trigger: 'blur' }
+          // ],
+          businessOperator: [
+            { required: true, message: '操作员编号不能为空', trigger: 'blur' }
+          ],
+          businessoperatorname: [
+            { required: true, message: '操作员名称不能为空', trigger: 'blur' }
+          ],
+          businesstype: [
+            { required: true, message: '分润类型  01 广告类  02 支付宝类不能为空', trigger: 'blur' }
+          ],
+          businessstate: [
+            { required: true, message: '分润状态  01 未分润  02 已分润不能为空', trigger: 'blur' }
+          ],
+          gmtCreate: [
+            { required: true, message: '添加时间不能为空', trigger: 'blur' }
+          ],
+          gmtModified: [
+            { required: true, message: '修改时间不能为空', trigger: 'blur' }
+          ],
+          isState: [
+            { required: true, message: '是否有效  01 是  02 否不能为空', trigger: 'blur' }
+          ],
+          isDelete: [
+            { required: true, message: '是否删除  01 是  02 否不能为空', trigger: 'blur' }
+          ]
+        }
+      }
+    },
+    computed: {
+      userName: {
+        get () { return this.$store.state.user.name }
+      }
+    },
+    mounted: function () {
+      this.$nextTick(function () {
+        this.$http({
+          url: this.$http.adornUrl(`/generator/tbcompanyinfo/companyList`),
+          method: 'get'
+        }).then((response) => {
+          this.options = response.data.companyList
+        })
+      })
+    },
+    methods: {
+      // 切换类型
+      changeType (calculationrule, index) {
+        if (calculationrule === '1') {
+          return '占比'
+        } else if (calculationrule === '2') {
+          return '定额'
+        } else if (calculationrule === '9') {
+          this.flag = index // 获取公交云那一行下标
+          return '默认'
+        } else {
+          return '无'
+        }
+      },
+      // changeSelect (comname) {
+      //   for (var i = 0; i < this.liList.length; i++) {
+      //     if (this.liList[i].companyvalue === comname) {
+      //       return true
+      //     }
+      //   }
+      //   return false
+      // },
+      createnewrole () {
+        this.liList.push({companyvalue: '', profittype: '', profittypeInput: '', description: ''})
+      },
+      init (id, busId, operatorName) {
+        this.dataForm.id = id || 0
+        this.visible = true
+        this.$nextTick(() => {
+          this.$refs['dataForm'].resetFields()
+          if (this.dataForm.id) {
+            this.$http({
+              url: this.$http.adornUrl(`/generator/tbprofitbusinessinfo/info/${this.dataForm.id}`),
+              method: 'get',
+              params: this.$http.adornParams()
+            }).then(({data}) => {
+              if (data && data.code === 0) {
+                this.dataForm.businessid = data.tbProfitbusinessInfo.businessid
+                this.dataForm.businessname = data.tbProfitbusinessInfo.businessname
+                this.dataForm.businessdescribe = data.tbProfitbusinessInfo.businessdescribe
+                this.dataForm.businessOperator = data.tbProfitbusinessInfo.businessOperator
+                this.dataForm.businessoperatorname = data.tbProfitbusinessInfo.businessoperatorname
+                this.dataForm.businesstype = data.tbProfitbusinessInfo.businesstype
+                this.dataForm.businessstate = data.tbProfitbusinessInfo.businessstate
+                this.dataForm.gmtCreate = data.tbProfitbusinessInfo.gmtCreate
+                this.dataForm.gmtModified = data.tbProfitbusinessInfo.gmtModified
+                this.dataForm.isState = data.tbProfitbusinessInfo.isState
+                this.dataForm.isDelete = data.tbProfitbusinessInfo.isDelete
+              }
+            })
+          }
+          if (this.dataForm.id) {
+            this.$http({
+              url: this.$http.adornUrl('/generator/tbprofitbusinessinfo/queryBusinessDetails'),
+              method: 'post',
+              data: {
+                'businessId': busId
+              },
+              params: this.$http.adornParams()
+            }).then(({data}) => {
+              if (data && data.code === 0) {
+                this.lists = data.lists
+              }
+            })
+          }
+        })
+      },
+      // 表单提交
+      dataFormSubmit () {
+        this.$http({
+          url: this.$http.adornUrl(`/generator/tbprofitbusinessinfo/${!this.dataForm.id ? 'saveProfitbusiness' : 'updateBusinessDate'}`),
+          method: 'post',
+          data: this.$http.adornData({
+            'id': this.dataForm.id || undefined,
+            'userName': this.dataForm.userName,
+            'businessID': this.dataForm.businessid,
+            'businessname': this.dataForm.businessname,
+            'businessdescribe': this.dataForm.businessdescribe,
+            'businessOperator': this.dataForm.businessOperator,
+            'businessOperatorName': this.userName,
+            'businesstype': 2,
+            'businessstate': this.dataForm.businessstate,
+            'gmtCreate': this.dataForm.gmtCreate,
+            'gmtModified': this.dataForm.gmtModified,
+            'isState': 1,
+            'isDelete': 2,
+            'profitroleList': this.liList,
+            'modifList': this.lists,
+            'proRole': '0',
+            'profitType': '9',
+            'profitInput': '',
+            'desc': this.dataForm.desc
+          })
+        }).then(({data}) => {
+          if (data && data.code === 0) {
+            this.$message({
+              message: '操作成功',
+              type: 'success',
+              duration: 1500,
+              onClose: () => {
+                this.visible = false
+                this.$emit('refreshDataList')
+              }
+            })
+          } else {
+            this.$message.error(data.msg)
+          }
+        })
+      }
+    }
+  }
+</script>

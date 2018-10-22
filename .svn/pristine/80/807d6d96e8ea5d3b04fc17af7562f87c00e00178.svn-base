@@ -1,0 +1,192 @@
+<template>
+  <el-dialog
+    :title="!dataForm.id ? '新增' : '修改'"
+    :close-on-click-modal="false"
+    :visible.sync="visible">
+    <el-form :model="dataForm" :rules="dataRule" ref="dataForm" @keyup.enter.native="dataFormSubmit()" label-width="80px">
+    <el-form-item label="导入数据ID" prop="excelid">
+      <el-input v-model="dataForm.excelid" placeholder="导入数据ID"></el-input>
+    </el-form-item>
+    <el-form-item label="广告位名称" prop="advertname">
+      <el-input v-model="dataForm.advertname" placeholder="广告位名称"></el-input>
+    </el-form-item>
+    <el-form-item label="广告位规格" prop="advertspec">
+      <el-input v-model="dataForm.advertspec" placeholder="广告位规格"></el-input>
+    </el-form-item>
+    <el-form-item label="广告位访问pv" prop="advertpv">
+      <el-input v-model="dataForm.advertpv" placeholder="广告位访问pv"></el-input>
+    </el-form-item>
+    <el-form-item label="广告位访问uv" prop="advertuv">
+      <el-input v-model="dataForm.advertuv" placeholder="广告位访问uv"></el-input>
+    </el-form-item>
+    <el-form-item label="新客访问量uv" prop="advertcustuv">
+      <el-input v-model="dataForm.advertcustuv" placeholder="新客访问量uv"></el-input>
+    </el-form-item>
+    <el-form-item label="IP访问量" prop="visitip">
+      <el-input v-model="dataForm.visitip" placeholder="IP访问量"></el-input>
+    </el-form-item>
+    <el-form-item label="预计收益" prop="expectprofit">
+      <el-input v-model="dataForm.expectprofit" placeholder="预计收益"></el-input>
+    </el-form-item>
+    <el-form-item label="确认状态" prop="confirmtype">
+      <el-input v-model="dataForm.confirmtype" placeholder="确认状态"></el-input>
+    </el-form-item>
+    <el-form-item label="添加时间" prop="gmtCreate">
+      <el-input v-model="dataForm.gmtCreate" placeholder="添加时间"></el-input>
+    </el-form-item>
+    <el-form-item label="修改时间" prop="gmtModified">
+      <el-input v-model="dataForm.gmtModified" placeholder="修改时间"></el-input>
+    </el-form-item>
+    <el-form-item label="是否有效  0 否  1 是" prop="isState">
+      <el-input v-model="dataForm.isState" placeholder="是否有效  0 否  1 是"></el-input>
+    </el-form-item>
+    <el-form-item label="是否删除   0 否  1是" prop="isDelete">
+      <el-input v-model="dataForm.isDelete" placeholder="是否删除   0 否  1是"></el-input>
+    </el-form-item>
+    </el-form>
+    <span slot="footer" class="dialog-footer">
+      <el-button @click="visible = false">取消</el-button>
+      <el-button type="primary" @click="dataFormSubmit()">确定</el-button>
+    </span>
+  </el-dialog>
+</template>
+
+<script>
+  export default {
+    data () {
+      return {
+        visible: false,
+        dataForm: {
+          id: 0,
+          excelid: '',
+          advertname: '',
+          advertspec: '',
+          advertpv: '',
+          advertuv: '',
+          advertcustuv: '',
+          visitip: '',
+          expectprofit: '',
+          confirmtype: '',
+          gmtCreate: '',
+          gmtModified: '',
+          isState: '',
+          isDelete: ''
+        },
+        dataRule: {
+          excelid: [
+            { required: true, message: '导入数据ID不能为空', trigger: 'blur' }
+          ],
+          advertname: [
+            { required: true, message: '广告位名称不能为空', trigger: 'blur' }
+          ],
+          advertspec: [
+            { required: true, message: '广告位规格不能为空', trigger: 'blur' }
+          ],
+          advertpv: [
+            { required: true, message: '广告位访问pv不能为空', trigger: 'blur' }
+          ],
+          advertuv: [
+            { required: true, message: '广告位访问uv不能为空', trigger: 'blur' }
+          ],
+          advertcustuv: [
+            { required: true, message: '新客访问量uv不能为空', trigger: 'blur' }
+          ],
+          visitip: [
+            { required: true, message: 'IP访问量不能为空', trigger: 'blur' }
+          ],
+          expectprofit: [
+            { required: true, message: '预计收益不能为空', trigger: 'blur' }
+          ],
+          confirmtype: [
+            { required: true, message: '确认状态不能为空', trigger: 'blur' }
+          ],
+          gmtCreate: [
+            { required: true, message: '添加时间不能为空', trigger: 'blur' }
+          ],
+          gmtModified: [
+            { required: true, message: '修改时间不能为空', trigger: 'blur' }
+          ],
+          isState: [
+            { required: true, message: '是否有效  0 否  1 是不能为空', trigger: 'blur' }
+          ],
+          isDelete: [
+            { required: true, message: '是否删除   0 否  1是不能为空', trigger: 'blur' }
+          ]
+        }
+      }
+    },
+    methods: {
+      init (id) {
+        this.dataForm.id = id || 0
+        this.visible = true
+        this.$nextTick(() => {
+          this.$refs['dataForm'].resetFields()
+          if (this.dataForm.id) {
+            this.$http({
+              url: this.$http.adornUrl(`/generator/advertisementexcel/info/${this.dataForm.id}`),
+              method: 'get',
+              params: this.$http.adornParams()
+            }).then(({data}) => {
+              if (data && data.code === 0) {
+                this.dataForm.excelid = data.advertisementexcel.excelid
+                this.dataForm.advertname = data.advertisementexcel.advertname
+                this.dataForm.advertspec = data.advertisementexcel.advertspec
+                this.dataForm.advertpv = data.advertisementexcel.advertpv
+                this.dataForm.advertuv = data.advertisementexcel.advertuv
+                this.dataForm.advertcustuv = data.advertisementexcel.advertcustuv
+                this.dataForm.visitip = data.advertisementexcel.visitip
+                this.dataForm.expectprofit = data.advertisementexcel.expectprofit
+                this.dataForm.confirmtype = data.advertisementexcel.confirmtype
+                this.dataForm.gmtCreate = data.advertisementexcel.gmtCreate
+                this.dataForm.gmtModified = data.advertisementexcel.gmtModified
+                this.dataForm.isState = data.advertisementexcel.isState
+                this.dataForm.isDelete = data.advertisementexcel.isDelete
+              }
+            })
+          }
+        })
+      },
+      // 表单提交
+      dataFormSubmit () {
+        this.$refs['dataForm'].validate((valid) => {
+          if (valid) {
+            this.$http({
+              url: this.$http.adornUrl(`/generator/advertisementexcel/${!this.dataForm.id ? 'save' : 'update'}`),
+              method: 'post',
+              data: this.$http.adornData({
+                'id': this.dataForm.id || undefined,
+                'excelid': this.dataForm.excelid,
+                'advertname': this.dataForm.advertname,
+                'advertspec': this.dataForm.advertspec,
+                'advertpv': this.dataForm.advertpv,
+                'advertuv': this.dataForm.advertuv,
+                'advertcustuv': this.dataForm.advertcustuv,
+                'visitip': this.dataForm.visitip,
+                'expectprofit': this.dataForm.expectprofit,
+                'confirmtype': this.dataForm.confirmtype,
+                'gmtCreate': this.dataForm.gmtCreate,
+                'gmtModified': this.dataForm.gmtModified,
+                'isState': this.dataForm.isState,
+                'isDelete': this.dataForm.isDelete
+              })
+            }).then(({data}) => {
+              if (data && data.code === 0) {
+                this.$message({
+                  message: '操作成功',
+                  type: 'success',
+                  duration: 1500,
+                  onClose: () => {
+                    this.visible = false
+                    this.$emit('refreshDataList')
+                  }
+                })
+              } else {
+                this.$message.error(data.msg)
+              }
+            })
+          }
+        })
+      }
+    }
+  }
+</script>
